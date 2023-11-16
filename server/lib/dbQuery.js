@@ -1,4 +1,6 @@
-const db = require('./db.js');
+var path = process.cwd();
+
+const db = require(path + '/lib/db.js');
 
 const dbQuery = async (res, query) => {
     return new Promise(async (resolve, reject) => {

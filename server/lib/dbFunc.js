@@ -1,4 +1,6 @@
-const db = require('./dbQuery.js');
+var path = process.cwd();
+
+const db = require(path + '/lib/dbQuery.js');
 
 const getProjectSkills = async (query) => {
     var rows = await getProjectRows(query);

@@ -1,5 +1,7 @@
 const mysql = require('mysql2/promise');  // mysql 모듈 로드
-const config = require('../config');
+var path = process.cwd();
+
+const config = require(path + '/config');
 
 const dbConfig = {  // mysql 접속 설정
     host: config.db.host,
@@ -9,7 +11,7 @@ const dbConfig = {  // mysql 접속 설정
     database: config.db.database,
     multipleStatements: true,
     connectionLimit: config.db.connLimit,
-    timezone: "Asia/Seoul"
+    // timezone: "Asia/Seoul"
 };
 
 module.exports = mysql.createPool(dbConfig);

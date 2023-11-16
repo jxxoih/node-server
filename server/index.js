@@ -1,12 +1,14 @@
 const express = require('express')
 var cors = require('cors')
 const app = express()
-
 const mysql = require('mysql2/promise');
-const db = require('./lib/dbQuery.js');
-const dbFunc = require('./lib/dbFunc.js');
 
-const config = require('./config');
+var path = process.cwd();
+
+const db = require(path + '/lib/dbQuery.js');
+const dbFunc = require(path + '/lib/dbFunc.js');
+const config = require(path + '/config');
+
 const port = config.server.serverport;
 
 // express cors 설정
