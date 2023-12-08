@@ -17,6 +17,8 @@ app.use(cors({
     credentials: true,
     origin: '*'
 }));
+app.use(express.json());
+app.use(express.urlencoded({ extends: false }));
 
 app.get('/', function (req, res) {
     res.send(`
@@ -24,13 +26,27 @@ app.get('/', function (req, res) {
   `)
 })
 
-app.post('/data', (req, res) => {
-    const { p_idx, action, arg } = req.query;
-
+app.get('/getData', (req, res) => {
+    const { p_idx, action } = req.query;
     var query = "";
 
     if (action === "getAbout") {
-        query = "SELECT p_name, p_email, p_birth, p_description, p_about_title, p_about_context, p_github FROM `profile` WHERE p_idx = " + p_idx;
+        query = `
+            SELECT 
+                p.p_name, 
+                p.p_email, 
+                p.p_birth, 
+                p.p_description, 
+                p.p_about_title, 
+                p.p_about_context, 
+                p.p_github,
+                sm.sm_state,
+                sm.sm_title,
+                sm.sm_context
+            FROM profile AS p
+            , state_mng AS sm 
+            WHERE p.p_idx = ${p_idx};
+        `;
     } else if (action === "getSkill") {
         query = `SELECT DISTINCT s.s_idx, s.s_name, s.s_img, sf.sf_name, s.sf_idx, p.p_github FROM project_skill AS ps  
         INNER JOIN skill AS s ON ps.s_idx = s.s_idx
@@ -93,7 +109,7 @@ app.post('/data', (req, res) => {
         INNER JOIN position AS pos ON p.pro_position = pos.pos_type
         LEFT JOIN company AS w ON p.c_idx = w.c_idx
         WHERE p.p_idx = ${p_idx}
-        ORDER BY p.c_idx, p.pro_idx ASC
+        ORDER BY p.pro_idx ASC
         `;
 
         dbFunc.func.getProjectSkills(query).then((resolvedData) =>
@@ -105,21 +121,24 @@ app.post('/data', (req, res) => {
         query = `
             SELECT s_idx, s_name FROM skill ORDER BY sf_idx ASC;
         `;
+    } else if (action === "getAuthPwd") {
+        query = `
+            SELECT p_auth_pwd as authPwd FROM profile WHERE p_idx = ${p_idx}
+        `;
     }
 
+    db(res, query);
+})
 
+app.post('/postData', (req, res) => {
+    const { p_idx, action, arg } = req.body;
+    var query = "";
 
-
-
-
-
-
-    // TODO:: update, insert
-    else if (action === "updateAbout") {
+    if (action === "updateAbout") {
         query = `
             UPDATE profile 
-            SET p_about_title = "${arg.aboutTitle}", 
-                p_about_context = "${arg.aboutContext}", 
+            SET p_about_title = "${arg.p_about_title}", 
+                p_about_context = "${arg.p_about_context}", 
                 updated_at = NOW()
             WHERE p_idx = ${p_idx}; 
         `;
@@ -214,9 +233,8 @@ app.post('/data', (req, res) => {
             })
         });
 
-        if (!!newProjectSkillData) {
-
-            query += "INSERT INTO project_skill (p_idx, pro_idx , s_idx) VALUES";
+        if (!!newProjectSkillData && newProjectSkillData.length > 0) {
+            query += "INSERT INTO project_skill (p_idx, pro_idx, s_idx) VALUES";
 
             newProjectSkillData.map((newData, idx) => {
                 var newSql = "(";
@@ -237,7 +255,6 @@ app.post('/data', (req, res) => {
             });
         }
 
-        query += `DELETE FROM project_skill WHERE p_idx = ${p_idx} AND pro_idx = 0;`;
     } else if (action === "insertProject") {
         var query = `
             INSERT INTO project (p_idx, c_idx, pro_name, pro_position, pro_detail, pro_url, pro_start_date, pro_end_date, use_status) VALUES 
@@ -266,6 +283,9 @@ app.post('/data', (req, res) => {
 
             query += sql;
         })
+    } else if (action === "deleteProjectSkill") {
+        query = `DELETE FROM project_skill WHERE p_idx = ${p_idx} AND pro_idx = 0;`;
+
     }
 
     db(res, query);
